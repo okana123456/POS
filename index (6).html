@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1e40af">
+    <title>BiasharaPOS - Complete System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #1e40af;
+            --primary-dark: #1e3a8a;
+            --success: #059669;
+            --danger: #dc2626;
+            --warning: #f59e0b;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-500: #6b7280;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--gray-100);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .pos-container {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            height: 100vh;
+        }
+
+        @media (max-width: 900px) {
+            .pos-container {
+                grid-template-columns: 1fr;
+            }
+            .cart-panel {
+                display: none;
+            }
+            .cart-panel.show {
+                display: flex;
+                position: fixed;
+                inset: 0;
+                z-index: 1000;
+            }
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+            color: #fff;
+            padding: 14px 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 1.3rem;
+        }
+
+        .header-shop {
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .header-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            padding: 9px 14px;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: 500;
+        }
+
+        .header-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .cart-toggle {
+            display: none;
+            background: var(--success);
+            position: relative;
+        }
+
+        .cart-badge {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            background: var(--danger);
+            font-size: 0.7rem;
+            padding: 3px 7px;
+            border-radius: 10px;
+            font-weight: 700;
+        }
+
+        @media (max-width: 900px) {
+            .cart-toggle {
+                display: flex;
+            }
+        }
+
+        /* Products Panel */
+        .products-panel {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .categories-bar {
+            background: #fff;
+            padding: 12px;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            border-bottom: 1px solid var(--gray-200);
+            flex-shrink: 0;
+        }
+
+        .cat-btn {
+            padding: 9px 18px;
+            border: 1px solid var(--gray-200);
+            border-radius: 20px;
+            background: #fff;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--gray-500);
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .cat-btn.active {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+
+        .search-bar {
+            padding: 12px;
+            background: #fff;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 11px 15px;
+            border: 1px solid var(--gray-300);
+            border-radius: 10px;
+            font-size: 0.95rem;
+        }
+
+        .products-grid {
+            flex: 1;
+            overflow-y: auto;
+            padding: 14px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(125px, 1fr));
+            gap: 12px;
+            align-content: start;
+        }
+
+        .product-btn {
+            background: #fff;
+            border: 2px solid var(--gray-200);
+            border-radius: 14px;
+            padding: 14px 10px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .product-btn:hover {
+            border-color: var(--primary);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+        }
+
+        .product-btn.low-stock {
+            border-color: var(--warning);
+            background: #fffbeb;
+        }
+
+        .product-btn.out-of-stock {
+            border-color: var(--danger);
+            background: #fef2f2;
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .product-emoji {
+            font-size: 2.2rem;
+            margin-bottom: 6px;
+        }
+
+        .product-name {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--gray-700);
+            margin-bottom: 5px;
+            line-height: 1.3;
+        }
+
+        .product-price {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .product-stock {
+            font-size: 0.7rem;
+            color: var(--gray-500);
+            margin-top: 3px;
+        }
+
+        .product-stock.low {
+            color: var(--warning);
+            font-weight: 600;
+        }
+
+        .product-stock.out {
+            color: var(--danger);
+        }
+
+        /* Cart Panel */
+        .cart-panel {
+            background: #fff;
+            border-left: 1px solid var(--gray-200);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .cart-header {
+            background: var(--gray-800);
+            color: #fff;
+            padding: 16px 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .cart-count {
+            background: #3b82f6;
+            padding: 3px 11px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+        }
+
+        .cart-close {
+            display: none;
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 1.6rem;
+            cursor: pointer;
+        }
+
+        @media (max-width: 900px) {
+            .cart-close {
+                display: block;
+            }
+        }
+
+        .cart-items {
+            flex: 1;
+            overflow-y: auto;
+            padding: 14px;
+        }
+
+        .cart-empty {
+            text-align: center;
+            padding: 50px 20px;
+            color: var(--gray-500);
+        }
+
+        .cart-empty-icon {
+            font-size: 3.5rem;
+            margin-bottom: 12px;
+        }
+
+        .cart-item {
+            background: var(--gray-50);
+            border-radius: 12px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .cart-item-info {
+            flex: 1;
+        }
+
+        .cart-item-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .cart-item-price {
+            font-size: 0.8rem;
+            color: var(--gray-500);
+        }
+
+        .cart-item-controls {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+        }
+
+        .qty-btn {
+            width: 30px;
+            height: 30px;
+            border: none;
+            border-radius: 7px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .qty-btn.minus {
+            background: var(--gray-200);
+            color: var(--gray-700);
+        }
+
+        .qty-btn.plus {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .cart-item-qty {
+            font-size: 0.95rem;
+            font-weight: 700;
+            min-width: 26px;
+            text-align: center;
+        }
+
+        .cart-item-total {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--primary);
+            min-width: 75px;
+            text-align: right;
+        }
+
+        .cart-item-remove {
+            background: transparent;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 1.15rem;
+            padding: 5px;
+            margin-left: 5px;
+        }
+
+        /* Cart Footer */
+        .cart-footer {
+            border-top: 1px solid var(--gray-200);
+            padding: 14px;
+        }
+
+        .cart-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            font-size: 0.9rem;
+        }
+
+        .cart-row.total {
+            font-size: 1.3rem;
+            font-weight: 700;
+            padding-top: 10px;
+            border-top: 1px dashed var(--gray-300);
+            margin-top: 6px;
+        }
+
+        /* Payment Buttons */
+        .payment-btns {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin: 14px 0;
+        }
+
+        .pay-btn {
+            padding: 12px 6px;
+            border: 2px solid var(--gray-200);
+            border-radius: 12px;
+            background: #fff;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            position: relative;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .pay-btn.active {
+            border-color: var(--success);
+            background: #ecfdf5;
+            color: var(--success);
+        }
+
+        .pay-btn.mpesa-listening {
+            border-color: var(--warning);
+            background: #fffef0;
+            animation: pulse-glow 2s infinite;
+        }
+
+        .pay-btn.mpesa-received {
+            border-color: var(--success);
+            background: #d1fae5;
+            color: var(--success);
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .pay-icon {
+            font-size: 1.4rem;
+            display: block;
+            margin-bottom: 3px;
+        }
+
+        .mpesa-status {
+            font-size: 0.7rem;
+            margin-top: 3px;
+            font-weight: 500;
+        }
+
+        /* M-Pesa Live Panel */
+        .mpesa-live-panel {
+            background: linear-gradient(135deg, var(--success), #047857);
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            color: #fff;
+            display: none;
+        }
+
+        .mpesa-live-panel.show {
+            display: block;
+        }
+
+        .mpesa-live-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .mpesa-live-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .mpesa-listening-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+        }
+
+        .listening-dot {
+            width: 8px;
+            height: 8px;
+            background: #fff;
+            border-radius: 50%;
+            animation: blink 1.5s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .mpesa-detected {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+        }
+
+        .mpesa-detected-name {
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-bottom: 3px;
+        }
+
+        .mpesa-detected-details {
+            opacity: 0.9;
+            font-size: 0.75rem;
+        }
+
+        /* M-Pesa Notification */
+        .mpesa-notification {
+            position: fixed;
+            top: 90px;
+            right: 20px;
+            background: var(--success);
+            color: #fff;
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            z-index: 10000;
+            display: none;
+            animation: slideIn 0.3s ease-out;
+            min-width: 280px;
+        }
+
+        .mpesa-notification.show {
+            display: block;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .mpesa-notif-header {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .mpesa-notif-body {
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+
+        .mpesa-notif-amount {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-top: 6px;
+        }
+
+        /* Action Buttons */
+        .action-btns {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 10px;
+        }
+
+        .clear-btn {
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            background: var(--gray-200);
+            color: var(--gray-700);
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .complete-btn {
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            background: var(--success);
+            color: #fff;
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .complete-btn:disabled {
+            background: var(--gray-300);
+            cursor: not-allowed;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            padding: 20px;
+        }
+
+        .modal-overlay.hidden {
+            display: none;
+        }
+
+        .modal {
+            background: #fff;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 400px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        /* Setup Modal */
+        .setup-modal {
+            padding: 28px;
+        }
+
+        .setup-modal h2 {
+            font-size: 1.3rem;
+            margin-bottom: 18px;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 7px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 13px;
+            border: 1px solid var(--gray-300);
+            border-radius: 10px;
+            font-size: 0.95rem;
+        }
+
+        .setup-btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            background: var(--primary);
+            color: #fff;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .demo-link {
+            text-align: center;
+            margin-top: 14px;
+            font-size: 0.9rem;
+            color: var(--gray-500);
+        }
+
+        .demo-link a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        /* Quick Add Modal */
+        .quick-modal {
+            padding: 22px;
+        }
+
+        .quick-modal h3 {
+            font-size: 1.05rem;
+            margin-bottom: 18px;
+            text-align: center;
+        }
+
+        .quick-product-name {
+            font-size: 1.15rem;
+            font-weight: 700;
+            text-align: center;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+
+        .quick-product-price {
+            font-size: 0.95rem;
+            text-align: center;
+            color: var(--gray-500);
+            margin-bottom: 18px;
+        }
+
+        .quick-qty-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 18px;
+            margin-bottom: 22px;
+        }
+
+        .quick-qty-btn {
+            width: 52px;
+            height: 52px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.6rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .quick-qty-btn.minus {
+            background: var(--gray-200);
+            color: var(--gray-700);
+        }
+
+        .quick-qty-btn.plus {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .quick-qty-display {
+            font-size: 2.2rem;
+            font-weight: 700;
+            min-width: 70px;
+            text-align: center;
+        }
+
+        .quick-total {
+            text-align: center;
+            font-size: 1.25rem;
+            margin-bottom: 18px;
+        }
+
+        .quick-total span {
+            font-weight: 700;
+            color: var(--success);
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .quick-btn {
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.98rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .quick-btn.cancel {
+            background: var(--gray-200);
+            color: var(--gray-700);
+        }
+
+        .quick-btn.add {
+            background: var(--success);
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="pos-container">
+        <!-- Products Panel -->
+        <div class="products-panel">
+            <div class="header">
+                <div>
+                    <h1>🛒 BiasharaPOS</h1>
+                    <div class="header-shop" id="headerShop">Loading...</div>
+                </div>
+                <div class="header-right">
+                    <button class="header-btn cart-toggle" onclick="toggleCart()">
+                        🛒 Cart
+                        <span class="cart-badge" id="cartBadge">0</span>
+                    </button>
+                    <a href="dashboard.html" class="header-btn">📊 Dashboard</a>
+                </div>
+            </div>
+
+            <div class="categories-bar" id="categoriesBar"></div>
+            
+            <div class="search-bar">
+                <input type="text" class="search-input" placeholder="🔍 Search products..." oninput="searchProducts(this.value)">
+            </div>
+            
+            <div class="products-grid" id="productsGrid"></div>
+        </div>
+
+        <!-- Cart Panel -->
+        <div class="cart-panel" id="cartPanel">
+            <div class="cart-header">
+                <div>
+                    <span style="font-weight:700">Cart</span>
+                    <span class="cart-count" id="cartCount">0 items</span>
+                </div>
+                <button class="cart-close" onclick="toggleCart()">×</button>
+            </div>
+            
+            <div class="cart-items" id="cartItems">
+                <div class="cart-empty">
+                    <div class="cart-empty-icon">🛒</div>
+                    <p>Cart is empty</p>
+                </div>
+            </div>
+
+            <div class="cart-footer">
+                <div class="cart-row">
+                    <span>Subtotal</span>
+                    <span id="subtotal">KES 0</span>
+                </div>
+                <div class="cart-row total">
+                    <span>TOTAL</span>
+                    <span id="grandTotal">KES 0</span>
+                </div>
+
+                <div style="margin-top:12px">
+                    <div style="font-size:.8rem;font-weight:600;color:var(--gray-700);margin-bottom:10px">Payment Method</div>
+                    <div class="payment-btns">
+                        <button class="pay-btn active" onclick="selectPayment('cash', event)">
+                            <span class="pay-icon">💵</span>
+                            Cash
+                        </button>
+                        <button class="pay-btn" id="mpesaBtn" onclick="selectPayment('mpesa', event)">
+                            <span class="pay-icon">📱</span>
+                            M-Pesa
+                            <div class="mpesa-status" id="mpesaStatus"></div>
+                        </button>
+                        <button class="pay-btn" onclick="selectPayment('card', event)">
+                            <span class="pay-icon">💳</span>
+                            Card
+                        </button>
+                        <button class="pay-btn" onclick="selectPayment('bank', event)">
+                            <span class="pay-icon">🏦</span>
+                            Bank
+                        </button>
+                    </div>
+
+                    <div class="mpesa-live-panel" id="mpesaLivePanel">
+                        <div class="mpesa-live-header">
+                            <div class="mpesa-live-title">📱 M-Pesa Monitor</div>
+                            <div class="mpesa-listening-indicator">
+                                <span class="listening-dot"></span>
+                                Listening...
+                            </div>
+                        </div>
+                        <div id="mpesaDetectedInfo"></div>
+                    </div>
+                </div>
+
+                <div class="action-btns">
+                    <button class="clear-btn" onclick="clearCart()">Clear</button>
+                    <button class="complete-btn" id="completeBtn" onclick="completeSale()" disabled>Complete Sale</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Setup Modal -->
+    <div class="modal-overlay" id="setupModal">
+        <div class="modal">
+            <div class="setup-modal">
+                <h2>🛒 Setup BiasharaPOS</h2>
+                <div class="input-group">
+                    <label>Shop Name</label>
+                    <input type="text" id="setupShopName" placeholder="e.g., My Supermarket">
+                </div>
+                <div class="input-group">
+                    <label>M-Pesa Till Number (Optional)</label>
+                    <input type="text" id="setupMpesaNumber" placeholder="e.g., 123456">
+                </div>
+                <button class="setup-btn" onclick="completeSetup()">Start Selling</button>
+                <div class="demo-link">
+                    or <a onclick="loadDemo()">Load Demo Data</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Add Modal -->
+    <div class="modal-overlay hidden" id="quickModal">
+        <div class="modal">
+            <div class="quick-modal">
+                <h3>Add to Cart</h3>
+                <div class="quick-product-name" id="quickProductName"></div>
+                <div class="quick-product-price" id="quickProductPrice"></div>
+                <div class="quick-qty-row">
+                    <button class="quick-qty-btn minus" onclick="changeQuickQty(-1)">−</button>
+                    <div class="quick-qty-display" id="quickQtyDisplay">1</div>
+                    <button class="quick-qty-btn plus" onclick="changeQuickQty(1)">+</button>
+                </div>
+                <div class="quick-total">
+                    Total: <span id="quickTotal">KES 0</span>
+                </div>
+                <div class="quick-actions">
+                    <button class="quick-btn cancel" onclick="closeQuickModal()">Cancel</button>
+                    <button class="quick-btn add" onclick="confirmQuickAdd()">Add to Cart</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'biasharaPosData';
+        const SALES_KEY = 'biasharaSales';
+
+        let config = null;
+        let products = [];
+        let cart = [];
+        let selectedCategory = 'All';
+        let selectedPayment = 'cash';
+        let quickAddProduct = null;
+        let quickAddQty = 1;
+        let mpesaReceived = false;
+
+        // Initialize
+        window.addEventListener('DOMContentLoaded', init);
+
+        function init() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                const data = JSON.parse(saved);
+                config = data.config;
+                products = data.products;
+                document.getElementById('headerShop').textContent = config.shopName;
+                document.getElementById('setupModal').classList.add('hidden');
+                renderProducts();
+                updateCategories();
+            } else {
+                document.getElementById('setupModal').classList.remove('hidden');
+            }
+        }
+
+        function completeSetup() {
+            const shopName = document.getElementById('setupShopName').value.trim();
+            const mpesaNumber = document.getElementById('setupMpesaNumber').value.trim();
+            if (!shopName) {
+                alert('Please enter shop name');
+                return;
+            }
+            config = {
+                shopName: shopName,
+                mpesaNumber: mpesaNumber,
+                pacxId: 'shop_' + Date.now()
+            };
+            products = [];
+            saveData();
+            document.getElementById('setupModal').classList.add('hidden');
+            document.getElementById('headerShop').textContent = config.shopName;
+            renderProducts();
+            updateCategories();
+        }
+
+        function loadDemo() {
+            config = {
+                pacxId: 'demo',
+                shopName: 'Demo Supermarket - Nairobi',
+                mpesaNumber: '123456'
+            };
+            products = [
+                {id:'MF001',category:'Maize Flour',name:'Jogoo 2kg',cost:165,price:185,stock:50,reorder:20},
+                {id:'MF002',category:'Maize Flour',name:'Pembe 2kg',cost:158,price:175,stock:8,reorder:15},
+                {id:'SG001',category:'Sugar',name:'Mumias 1kg',cost:145,price:165,stock:60,reorder:25},
+                {id:'SG002',category:'Sugar',name:'Kabras 1kg',cost:142,price:162,stock:5,reorder:20},
+                {id:'RC001',category:'Rice',name:'Pishori 1kg',cost:180,price:220,stock:40,reorder:15},
+                {id:'RC002',category:'Rice',name:'Sindano 1kg',cost:120,price:150,stock:0,reorder:15},
+                {id:'OL001',category:'Cooking Oil',name:'Elianto 1L',cost:280,price:320,stock:35,reorder:15},
+                {id:'OL002',category:'Cooking Oil',name:'Kimbo 500g',cost:180,price:210,stock:7,reorder:15},
+                {id:'ML001',category:'Milk',name:'Brookside 500ml',cost:55,price:70,stock:50,reorder:30},
+                {id:'TE001',category:'Tea',name:'Ketepa 100g',cost:110,price:140,stock:40,reorder:20},
+                {id:'SD001',category:'Soft Drinks',name:'Coca Cola 500ml',cost:60,price:80,stock:48,reorder:24},
+                {id:'SD002',category:'Soft Drinks',name:'Fanta 500ml',cost:58,price:75,stock:36,reorder:20},
+                {id:'WA001',category:'Water',name:'Keringet 500ml',cost:25,price:40,stock:60,reorder:30},
+                {id:'BR001',category:'Bread',name:'Supa Loaf 400g',cost:52,price:65,stock:20,reorder:10},
+                {id:'SP001',category:'Soap',name:'Jamaa Bar',cost:45,price:60,stock:100,reorder:30},
+                {id:'DT001',category:'Detergent',name:'Omo 500g',cost:120,price:150,stock:3,reorder:10}
+            ];
+            saveData();
+            document.getElementById('setupModal').classList.add('hidden');
+            document.getElementById('headerShop').textContent = config.shopName;
+            renderProducts();
+            updateCategories();
+        }
+
+        function saveData() {
+            const data = {config, products, lastUpdated: new Date().toISOString()};
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        }
+
+        function saveSale(sale) {
+            let sales = JSON.parse(localStorage.getItem(SALES_KEY) || '[]');
+            sales.unshift(sale);
+            localStorage.setItem(SALES_KEY, JSON.stringify(sales));
+        }
+
+        function updateCategories() {
+            const cats = ['All', ...new Set(products.map(p => p.category))];
+            document.getElementById('categoriesBar').innerHTML = cats.map(c => 
+                `<button class="cat-btn ${c === selectedCategory ? 'active' : ''}" onclick="filterCategory('${c}')">${c}</button>`
+            ).join('');
+        }
+
+        function filterCategory(cat) {
+            selectedCategory = cat;
+            updateCategories();
+            renderProducts();
+        }
+
+        function searchProducts(query) {
+            renderProducts(query);
+        }
+
+        function renderProducts(searchQuery = '') {
+            const filtered = products.filter(p => {
+                const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
+                const matchesSearch = !searchQuery || 
+                    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    p.category.toLowerCase().includes(searchQuery.toLowerCase());
+                return matchesCategory && matchesSearch;
+            });
+
+            document.getElementById('productsGrid').innerHTML = filtered.map(p => {
+                const stockClass = p.stock === 0 ? 'out-of-stock' : p.stock <= p.reorder ? 'low-stock' : '';
+                const stockLabel = p.stock === 0 ? 'Out of Stock' : p.stock <= p.reorder ? `Low: ${p.stock}` : `Stock: ${p.stock}`;
+                const stockLabelClass = p.stock === 0 ? 'out' : p.stock <= p.reorder ? 'low' : '';
+                return `
+                    <button class="product-btn ${stockClass}" onclick="openQuickAdd('${p.id}')" ${p.stock === 0 ? 'disabled' : ''}>
+                        <div class="product-emoji">${getEmoji(p.category)}</div>
+                        <div class="product-name">${p.name}</div>
+                        <div class="product-price">KES ${p.price}</div>
+                        <div class="product-stock ${stockLabelClass}">${stockLabel}</div>
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function getEmoji(category) {
+            const emojis = {
+                'Maize Flour': '🌽', 'Sugar': '🍬', 'Rice': '🍚', 'Cooking Oil': '🛢️',
+                'Milk': '🥛', 'Tea': '☕', 'Soft Drinks': '🥤', 'Water': '💧',
+                'Bread': '🍞', 'Soap': '🧼', 'Detergent': '🧴'
+            };
+            return emojis[category] || '📦';
+        }
+
+        function openQuickAdd(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product || product.stock === 0) return;
+            quickAddProduct = product;
+            quickAddQty = 1;
+            document.getElementById('quickProductName').textContent = product.name;
+            document.getElementById('quickProductPrice').textContent = `KES ${product.price} each`;
+            document.getElementById('quickQtyDisplay').textContent = quickAddQty;
+            document.getElementById('quickTotal').textContent = `KES ${(product.price * quickAddQty).toLocaleString()}`;
+            document.getElementById('quickModal').classList.remove('hidden');
+        }
+
+        function changeQuickQty(delta) {
+            if (!quickAddProduct) return;
+            quickAddQty = Math.max(1, Math.min(quickAddQty + delta, quickAddProduct.stock));
+            document.getElementById('quickQtyDisplay').textContent = quickAddQty;
+            document.getElementById('quickTotal').textContent = `KES ${(quickAddProduct.price * quickAddQty).toLocaleString()}`;
+        }
+
+        function confirmQuickAdd() {
+            if (!quickAddProduct) return;
+            const existing = cart.find(i => i.id === quickAddProduct.id);
+            if (existing) {
+                existing.qty = Math.min(existing.qty + quickAddQty, quickAddProduct.stock);
+            } else {
+                cart.push({
+                    id: quickAddProduct.id,
+                    name: quickAddProduct.name,
+                    price: quickAddProduct.price,
+                    cost: quickAddProduct.cost,
+                    category: quickAddProduct.category,
+                    qty: quickAddQty,
+                    maxStock: quickAddProduct.stock
+                });
+            }
+            closeQuickModal();
+            updateCart();
+        }
+
+        function closeQuickModal() {
+            document.getElementById('quickModal').classList.add('hidden');
+            quickAddProduct = null;
+            quickAddQty = 1;
+        }
+
+        function updateCart() {
+            const itemsEl = document.getElementById('cartItems');
+            const countEl = document.getElementById('cartCount');
+            const badgeEl = document.getElementById('cartBadge');
+
+            if (cart.length === 0) {
+                itemsEl.innerHTML = `
+                    <div class="cart-empty">
+                        <div class="cart-empty-icon">🛒</div>
+                        <p>Cart is empty</p>
+                    </div>
+                `;
+                countEl.textContent = '0 items';
+                badgeEl.textContent = '0';
+            } else {
+                itemsEl.innerHTML = cart.map(item => `
+                    <div class="cart-item">
+                        <div class="cart-item-info">
+                            <div class="cart-item-name">${item.name}</div>
+                            <div class="cart-item-price">KES ${item.price} × ${item.qty}</div>
+                        </div>
+                        <div class="cart-item-controls">
+                            <button class="qty-btn minus" onclick="changeQty('${item.id}', -1)">−</button>
+                            <div class="cart-item-qty">${item.qty}</div>
+                            <button class="qty-btn plus" onclick="changeQty('${item.id}', 1)">+</button>
+                            <div class="cart-item-total">KES ${(item.price * item.qty).toLocaleString()}</div>
+                            <button class="cart-item-remove" onclick="removeItem('${item.id}')">🗑️</button>
+                        </div>
+                    </div>
+                `).join('');
+
+                const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
+                countEl.textContent = `${totalItems} item${totalItems !== 1 ? 's' : ''}`;
+                badgeEl.textContent = totalItems;
+            }
+
+            updateTotals();
+            updateCompleteButton();
+        }
+
+        function changeQty(itemId, delta) {
+            const item = cart.find(i => i.id === itemId);
+            if (!item) return;
+            item.qty = Math.max(1, Math.min(item.qty + delta, item.maxStock));
+            updateCart();
+        }
+
+        function removeItem(itemId) {
+            cart = cart.filter(i => i.id !== itemId);
+            updateCart();
+        }
+
+        function clearCart() {
+            cart = [];
+            mpesaReceived = false;
+            stopMpesaListener();
+            updateCart();
+        }
+
+        function updateTotals() {
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            document.getElementById('subtotal').textContent = `KES ${subtotal.toLocaleString()}`;
+            document.getElementById('grandTotal').textContent = `KES ${subtotal.toLocaleString()}`;
+        }
+
+        function updateCompleteButton() {
+            const btn = document.getElementById('completeBtn');
+            if (cart.length === 0) {
+                btn.disabled = true;
+                btn.textContent = 'Complete Sale';
+                return;
+            }
+
+            if (selectedPayment === 'mpesa' && !mpesaReceived) {
+                btn.disabled = true;
+                btn.textContent = 'Waiting for M-Pesa...';
+            } else {
+                btn.disabled = false;
+                btn.textContent = 'Complete Sale';
+            }
+        }
+
+        function selectPayment(method, event) {
+            selectedPayment = method;
+            
+            document.querySelectorAll('.pay-btn').forEach(btn => btn.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+
+            const mpesaPanel = document.getElementById('mpesaLivePanel');
+            if (method === 'mpesa') {
+                mpesaPanel.classList.add('show');
+                startMpesaListener();
+            } else {
+                mpesaPanel.classList.remove('show');
+                stopMpesaListener();
+            }
+
+            updateCompleteButton();
+        }
+
+        function startMpesaListener() {
+            const mpesaBtn = document.getElementById('mpesaBtn');
+            const mpesaStatus = document.getElementById('mpesaStatus');
+            
+            mpesaBtn.classList.add('mpesa-listening');
+            mpesaStatus.textContent = 'Listening...';
+
+            setTimeout(() => {
+                simulateMpesaPayment();
+            }, 3000);
+        }
+
+        function stopMpesaListener() {
+            const mpesaBtn = document.getElementById('mpesaBtn');
+            const mpesaStatus = document.getElementById('mpesaStatus');
+            
+            mpesaBtn.classList.remove('mpesa-listening', 'mpesa-received');
+            mpesaStatus.textContent = '';
+            mpesaReceived = false;
+        }
+
+        function simulateMpesaPayment() {
+            const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            
+            const mpesaData = {
+                code: 'SH' + Date.now().toString().slice(-8),
+                phone: '0712345678',
+                name: 'JOHN DOE',
+                amount: total
+            };
+
+            showMpesaNotification(mpesaData);
+            
+            const mpesaBtn = document.getElementById('mpesaBtn');
+            const mpesaStatus = document.getElementById('mpesaStatus');
+            const mpesaInfo = document.getElementById('mpesaDetectedInfo');
+            
+            mpesaBtn.classList.remove('mpesa-listening');
+            mpesaBtn.classList.add('mpesa-received');
+            mpesaStatus.textContent = 'Received ✓';
+            
+            mpesaInfo.innerHTML = `
+                <div class="mpesa-detected">
+                    <div class="mpesa-detected-name">✓ Payment Received</div>
+                    <div class="mpesa-detected-details">
+                        From: ${mpesaData.name}<br>
+                        Code: ${mpesaData.code}<br>
+                        Amount: KES ${mpesaData.amount.toLocaleString()}
+                    </div>
+                </div>
+            `;
+            
+            mpesaReceived = true;
+            updateCompleteButton();
+        }
+
+        function showMpesaNotification(data) {
+            const existing = document.querySelector('.mpesa-notification');
+            if (existing) existing.remove();
+
+            const notification = document.createElement('div');
+            notification.className = 'mpesa-notification show';
+            notification.innerHTML = `
+                <div class="mpesa-notif-header">📱 M-Pesa Payment Received!</div>
+                <div class="mpesa-notif-body">From: ${data.name}<br>Phone: ${data.phone}</div>
+                <div class="mpesa-notif-amount">KES ${data.amount.toLocaleString()}</div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => notification.remove(), 300);
+            }, 5000);
+        }
+
+        function completeSale() {
+            if (cart.length === 0) return;
+
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            
+            const sale = {
+                id: 'S' + Date.now(),
+                date: new Date().toISOString(),
+                items: cart,
+                total: subtotal,
+                paymentMethod: selectedPayment,
+                pacxId: config.pacxId
+            };
+
+            // Update stock
+            cart.forEach(item => {
+                const product = products.find(p => p.id === item.id);
+                if (product) {
+                    product.stock -= item.qty;
+                }
+            });
+
+            saveData();
+            saveSale(sale);
+
+            alert(`Sale completed! KES ${subtotal.toLocaleString()} via ${selectedPayment.toUpperCase()}`);
+
+            // Reset
+            cart = [];
+            mpesaReceived = false;
+            selectedPayment = 'cash';
+            stopMpesaListener();
+            
+            document.querySelectorAll('.pay-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector('.pay-btn').classList.add('active');
+
+            updateCart();
+            renderProducts();
+        }
+
+        function toggleCart() {
+            document.getElementById('cartPanel').classList.toggle('show');
+        }
+    </script>
+</body>
+</html>
